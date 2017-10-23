@@ -12,6 +12,8 @@ namespace Complete
      */
     public partial class TankAI : MonoBehaviour
     {
+		public float patrolMaxDistance = 7.0f;
+
         private Root CreateBehaviourTree() {
 
             switch (m_Behaviour) {
@@ -20,6 +22,8 @@ namespace Complete
                     return SpinBehaviour(-0.05f, 1f);
                 case 2:
                     return TrackBehaviour();
+				case 3:
+					return CrazyBehaviour();
 
                 default:
                     return new Root (new Action(()=> Turn(0.1f)));
@@ -70,6 +74,31 @@ namespace Complete
                 )
             );
         }
+
+		private Root CrazyBehaviour() {
+			return new Root(
+				new Service(0.2f, UpdatePerception,
+					new Selector(
+						new BlackboardCondition("targetOffCentre",
+							Operator.IS_SMALLER_OR_EQUAL, 0.1f,
+							Stops.IMMEDIATE_RESTART,
+							// Stop turning and fire
+							new Sequence(StopTurning(),
+								new Wait(0.1f),
+								RandomFire())),
+						new BlackboardCondition("targetOnRight",
+							Operator.IS_EQUAL, true,
+							Stops.IMMEDIATE_RESTART,
+							// Turn right toward target
+							new Action(() => Turn(1f))),
+						// Turn left toward target
+						new Action(() => Turn(-1f))
+					)
+				)
+			);
+
+
+		}
 
         private void UpdatePerception() {
             Vector3 targetPos = TargetTransform().position;
