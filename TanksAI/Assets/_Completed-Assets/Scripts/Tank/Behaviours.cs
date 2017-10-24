@@ -52,6 +52,25 @@ namespace Complete
 		}
 
 
+		private Node RangedFire ()
+		{
+			return new Action (() => ShotPrediction ());
+		}
+
+		private void ShotPrediction(){
+			Vector3 targetPos = TargetTransform ().position;
+			Vector3 localPos = this.transform.InverseTransformPoint (targetPos);
+			float requiredVel = Mathf.Sqrt (localPos.magnitude* 15.0f);
+			Debug.Log (requiredVel);
+			float time = 0.0f;
+			if (requiredVel > 25.0f)
+				time = 1.0f;
+			else if (requiredVel > 15.0f)
+				time = (requiredVel -15.0f)/10.0f;
+			Fire (time);
+		}
+
+
         /* Example behaviour trees */
 
         // Constantly spin and fire on the spot 
@@ -109,13 +128,25 @@ namespace Complete
 			);
 		}
 
-		private Root DeadlyBehaviour() {
-			return new Root(new Service(0.2f, UpdatePerception,
+		private Root DeadlyBehaviour () {
+			return new Root(new Service(0.5f, UpdatePerception,
 				new Sequence(
-					new Action(() => Turn((float) blackboard["turn"])),
 					new Action(() => Move((float) blackboard["move"])),
-					new Action(() => Fire(1f))
+					new Selector(
+						new BlackboardCondition("targetOffCentre",
+							Operator.IS_SMALLER_OR_EQUAL, 0.1f,
+							Stops.IMMEDIATE_RESTART,
+							new Sequence(RangedFire())),
+						new BlackboardCondition("targetOnRight",
+							Operator.IS_EQUAL, true,
+							Stops.IMMEDIATE_RESTART,
+							// Turn right toward target
+							new Action(() => Turn(1f))),
+						// Turn left toward target
+						new Action(() => Turn(-1f))
+					)
 				)));
+
 		}
 
 		private Root FunBehaviour () {
@@ -128,7 +159,6 @@ namespace Complete
 							Stops.IMMEDIATE_RESTART,
 							// Stop turning and fire
 							new Sequence(StopTurning(),
-								new Wait(1f),
 								RandomFire())),
 						new BlackboardCondition("targetOnRight",
 							Operator.IS_EQUAL, true,
@@ -149,14 +179,14 @@ namespace Complete
 						new BlackboardCondition("targetOffCentre",
 							Operator.IS_SMALLER_OR_EQUAL, 0.1f,
 							Stops.IMMEDIATE_RESTART,
-							new Sequence(NonStopTurning(1f,1f))),
+							new Sequence(NonStopTurning(-1f,1f))),
 						new BlackboardCondition("targetOnRight",
 							Operator.IS_EQUAL, true,
 							Stops.IMMEDIATE_RESTART,
 							// Turn right toward target
-							new Action(() => Turn(1f))),
+							new Action(() => Turn(-1f))),
 						// Turn left toward target
-						new Action(() => Turn(-1f))
+						new Action(() => Turn(1f))
 					)
 					)));
 
