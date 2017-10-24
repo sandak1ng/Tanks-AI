@@ -22,18 +22,14 @@ namespace Complete
 
             switch (m_Behaviour) {
 
-                case 1:
-                    return SpinBehaviour(-0.05f, 1f);
-                case 2:
-                    return TrackBehaviour();
+				case 0:
+					return FunBehaviour();
+				case 1:
+					return DeadlyBehaviour();
+				case 2:
+					return RunBehaviour();
 				case 3:
 					return CrazyBehaviour();
-				case 4:
-					return WeirdBehaviour();
-				case 5:
-					return TestBehaviour();
-				case 6:
-					return RunBehaviour ();
 
                 default:
                     return new Root (new Action(()=> Turn(0.1f)));
@@ -59,36 +55,36 @@ namespace Complete
         /* Example behaviour trees */
 
         // Constantly spin and fire on the spot 
-        private Root SpinBehaviour(float turn, float shoot) {
-            return new Root(new Sequence(
-                        new Action(() => Turn(turn)),
-                        new Action(() => Fire(shoot))
-                    ));
-        }
+        // private Root SpinBehaviour(float turn, float shoot) {
+        //    return new Root(new Sequence(
+        //                new Action(() => Turn(turn)),
+        //                new Action(() => Fire(shoot))
+        //            ));
+        //}
 
         // Turn to face your opponent and fire
-        private Root TrackBehaviour() {
-            return new Root(
-                new Service(0.2f, UpdatePerception,
-                    new Selector(
-                        new BlackboardCondition("targetOffCentre",
-                                                Operator.IS_SMALLER_OR_EQUAL, 0.1f,
-                                                Stops.IMMEDIATE_RESTART,
-                            // Stop turning and fire
-                            new Sequence(StopTurning(),
-                                        new Wait(2f),
-                                        RandomFire())),
-                        new BlackboardCondition("targetOnRight",
-                                                Operator.IS_EQUAL, true,
-                                                Stops.IMMEDIATE_RESTART,
-                            // Turn right toward target
-                            new Action(() => Turn(0.2f))),
-                            // Turn left toward target
-                            new Action(() => Turn(-0.2f))
-                    )
-                )
-            );
-        }
+        // private Root TrackBehaviour() {
+        //    return new Root(
+        //       new Service(0.2f, UpdatePerception,
+        //            new Selector(
+        //                new BlackboardCondition("targetOffCentre",
+        //                                        Operator.IS_SMALLER_OR_EQUAL, 0.1f,
+        //                                        Stops.IMMEDIATE_RESTART,
+        //                    // Stop turning and fire
+        //                    new Sequence(StopTurning(),
+        //                                new Wait(2f),
+        //                                RandomFire())),
+        //                new BlackboardCondition("targetOnRight",
+        //                                        Operator.IS_EQUAL, true,
+        //                                        Stops.IMMEDIATE_RESTART,
+        //                    // Turn right toward target
+        //                    new Action(() => Turn(0.2f))),
+        //                    // Turn left toward target
+        //                    new Action(() => Turn(-0.2f))
+        //            )
+        //        )
+        //    );
+        //}
 
 		private Root CrazyBehaviour() {
 			return new Root(
@@ -113,7 +109,7 @@ namespace Complete
 			);
 		}
 
-		private Root WeirdBehaviour() {
+		private Root DeadlyBehaviour() {
 			return new Root(new Service(0.2f, UpdatePerception,
 				new Sequence(
 					new Action(() => Turn((float) blackboard["turn"])),
@@ -122,7 +118,7 @@ namespace Complete
 				)));
 		}
 
-		private Root TestBehaviour () {
+		private Root FunBehaviour () {
 			return new Root(new Service(0.5f, UpdatePerception,
 				new Sequence(
 					new Action(() => Move((float) blackboard["move"])),
@@ -189,6 +185,8 @@ namespace Complete
 			float r = (float) rng.NextDouble();
 			return -1f + r*2f;
 		}
+
+
         }
 
     }
