@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.AI;
 using NPBehave;
 using System.Collections.Generic;
 
@@ -12,7 +13,10 @@ namespace Complete
      */
     public partial class TankAI : MonoBehaviour
     {
-		public float patrolMaxDistance = 7.0f;
+
+		private System.Random rng;
+		public Transform eyes;
+		public NavMeshAgent navMeshAgent;
 
         private Root CreateBehaviourTree() {
 
@@ -24,6 +28,8 @@ namespace Complete
                     return TrackBehaviour();
 				case 3:
 					return CrazyBehaviour();
+				case 4:
+					return WeirdBehaviour();
 
                 default:
                     return new Root (new Action(()=> Turn(0.1f)));
@@ -96,8 +102,15 @@ namespace Complete
 					)
 				)
 			);
+		}
 
-
+		private Root WeirdBehaviour() {
+			return new Root(new Service(0.2f, UpdatePerception,
+				new Sequence(
+					new Action(() => Turn((float) blackboard["turn"])),
+					new Action(() => Move((float) blackboard["move"])),
+					new Action(() => Fire(1f))
+				)));
 		}
 
         private void UpdatePerception() {
@@ -108,7 +121,18 @@ namespace Complete
             blackboard["targetInFront"] = heading.z > 0;
             blackboard["targetOnRight"] = heading.x > 0;
             blackboard["targetOffCentre"] = Mathf.Abs(heading.x);
+
+			if (rng == null) {
+				rng = new System.Random();
+			}
+			blackboard["turn"] = (float) randomFloat();
+			blackboard["move"] = (float) rng.NextDouble();
+		}
+
+		float randomFloat() {
+			float r = (float) rng.NextDouble();
+			return -1f + r*2f;
+		}
         }
 
     }
-}
