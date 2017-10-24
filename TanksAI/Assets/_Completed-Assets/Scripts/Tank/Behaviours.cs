@@ -30,6 +30,10 @@ namespace Complete
 					return CrazyBehaviour();
 				case 4:
 					return WeirdBehaviour();
+				case 5:
+					return TestBehaviour();
+				case 6:
+					return RunBehaviour ();
 
                 default:
                     return new Root (new Action(()=> Turn(0.1f)));
@@ -45,6 +49,11 @@ namespace Complete
         private Node RandomFire() {
             return new Action(() => Fire(UnityEngine.Random.Range(0.0f, 1.0f)));
         }
+
+		private Node NonStopTurning(float turn, float shoot){
+			return new Action(() => Turn(turn));
+			return new Action(() => Fire (shoot));
+		}
 
 
         /* Example behaviour trees */
@@ -113,15 +122,62 @@ namespace Complete
 				)));
 		}
 
+		private Root TestBehaviour () {
+			return new Root(new Service(0.5f, UpdatePerception,
+				new Sequence(
+					new Action(() => Move((float) blackboard["move"])),
+					new Selector(
+						new BlackboardCondition("targetOffCentre",
+							Operator.IS_SMALLER_OR_EQUAL, 0.1f,
+							Stops.IMMEDIATE_RESTART,
+							// Stop turning and fire
+							new Sequence(StopTurning(),
+								new Wait(1f),
+								RandomFire())),
+						new BlackboardCondition("targetOnRight",
+							Operator.IS_EQUAL, true,
+							Stops.IMMEDIATE_RESTART,
+							// Turn right toward target
+							new Action(() => Turn(1f))),
+						// Turn left toward target
+						new Action(() => Turn(-1f))
+					)
+				)));
+		}
+
+		private Root RunBehaviour () {
+			return new Root(new Service(0.5f, UpdatePerception,
+				new Sequence(
+					new Action(() => Move((float) blackboard["move"])),
+					new Selector(
+						new BlackboardCondition("targetOffCentre",
+							Operator.IS_SMALLER_OR_EQUAL, 0.1f,
+							Stops.IMMEDIATE_RESTART,
+							new Sequence(NonStopTurning(1f,1f))),
+						new BlackboardCondition("targetOnRight",
+							Operator.IS_EQUAL, true,
+							Stops.IMMEDIATE_RESTART,
+							// Turn right toward target
+							new Action(() => Turn(1f))),
+						// Turn left toward target
+						new Action(() => Turn(-1f))
+					)
+					)));
+
+		}
+
+
         private void UpdatePerception() {
+
             Vector3 targetPos = TargetTransform().position;
             Vector3 localPos = this.transform.InverseTransformPoint(targetPos);
             Vector3 heading = localPos.normalized;
+
             blackboard["targetDistance"] = localPos.magnitude;
             blackboard["targetInFront"] = heading.z > 0;
             blackboard["targetOnRight"] = heading.x > 0;
             blackboard["targetOffCentre"] = Mathf.Abs(heading.x);
-
+		
 			if (rng == null) {
 				rng = new System.Random();
 			}
