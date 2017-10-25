@@ -46,9 +46,9 @@ namespace Complete
             return new Action(() => Fire(UnityEngine.Random.Range(0.0f, 1.0f)));
         }
 
-		private Node NonStopTurning(float turn, float shoot){
+		private Node RunAway(float turn, float move){
 			return new Action(() => Turn(turn));
-			return new Action(() => Fire (shoot));
+			return new Action(() => Move(move));
 		}
 
 
@@ -56,6 +56,8 @@ namespace Complete
 		{
 			return new Action (() => ShotPrediction ());
 		}
+			
+		//Calculates the position of the enemy
 
 		private void ShotPrediction(){
 			Vector3 targetPos = TargetTransform ().position;
@@ -105,91 +107,62 @@ namespace Complete
         //    );
         //}
 
-		private Root CrazyBehaviour() {
-			return new Root(
-				new Service(0.2f, UpdatePerception,
-					new Selector(
-						new BlackboardCondition("targetOffCentre",
-							Operator.IS_SMALLER_OR_EQUAL, 0.1f,
-							Stops.IMMEDIATE_RESTART,
-							// Stop turning and fire
-							new Sequence(StopTurning(),
-								new Wait(0.1f),
-								RandomFire())),
-						new BlackboardCondition("targetOnRight",
-							Operator.IS_EQUAL, true,
-							Stops.IMMEDIATE_RESTART,
-							// Turn right toward target
-							new Action(() => Turn(1f))),
-						// Turn left toward target
-						new Action(() => Turn(-1f))
-					)
-				)
-			);
+		// Doesnt Shoot, Mainly used this behaviour to experiment with movement **********************************************************
+
+		private Root FunBehaviour () {
+			return new Root(new Service(0.2f, UpdatePerception,
+				new Sequence(
+					new Action(() => Turn((float) blackboard["turn"])),
+					new Action(() => Move((float) blackboard["move"])),
+				new Selector(
+						new BlackboardCondition("targetOffCentre", Operator.IS_SMALLER_OR_EQUAL, 0.1f, Stops.IMMEDIATE_RESTART, new Action(() => StopTurning())),
+						new BlackboardCondition("targetOnRight", Operator.IS_EQUAL, true, Stops.IMMEDIATE_RESTART, new Sequence (new Action(() => Turn(5f)), new Action(() => Turn(5f)))),
+						new BlackboardCondition("targetInFront", Operator.IS_EQUAL, true, Stops.IMMEDIATE_RESTART, new Sequence (new Action(() => Move(5f)))),
+						new BlackboardCondition("targetInFront", Operator.IS_EQUAL, false, Stops.IMMEDIATE_RESTART, new Sequence (new Action(() => Move(-5f))))
+							)
+				)));
+
 		}
+
+		// Shoots way too much and has a shot prediction which calculates the distance of the enemy *************************************
 
 		private Root DeadlyBehaviour () {
 			return new Root(new Service(0.5f, UpdatePerception,
 				new Sequence(
 					new Action(() => Move((float) blackboard["move"])),
 					new Selector(
-						new BlackboardCondition("targetOffCentre",
-							Operator.IS_SMALLER_OR_EQUAL, 0.1f,
-							Stops.IMMEDIATE_RESTART,
-							new Sequence(RangedFire())),
-						new BlackboardCondition("targetOnRight",
-							Operator.IS_EQUAL, true,
-							Stops.IMMEDIATE_RESTART,
-							// Turn right toward target
-							new Action(() => Turn(1f))),
-						// Turn left toward target
-						new Action(() => Turn(-1f))
-					)
+						new BlackboardCondition("targetOffCentre", Operator.IS_SMALLER_OR_EQUAL, 0.1f, Stops.IMMEDIATE_RESTART, new Sequence(RangedFire())),
+						new BlackboardCondition("targetOnRight", Operator.IS_EQUAL, true, Stops.IMMEDIATE_RESTART, new Action(() => Turn(1f))), new Action(() => Turn(-1f))
+							)
 				)));
 
 		}
 
-		private Root FunBehaviour () {
-			return new Root(new Service(0.5f, UpdatePerception,
-				new Sequence(
-					new Action(() => Move((float) blackboard["move"])),
-					new Selector(
-						new BlackboardCondition("targetOffCentre",
-							Operator.IS_SMALLER_OR_EQUAL, 0.1f,
-							Stops.IMMEDIATE_RESTART,
-							// Stop turning and fire
-							new Sequence(StopTurning(),
-								RandomFire())),
-						new BlackboardCondition("targetOnRight",
-							Operator.IS_EQUAL, true,
-							Stops.IMMEDIATE_RESTART,
-							// Turn right toward target
-							new Action(() => Turn(1f))),
-						// Turn left toward target
-						new Action(() => Turn(-1f))
-					)
-				)));
-		}
+		// Runs from the enemy without shooting ******************************************************************************************
 
 		private Root RunBehaviour () {
 			return new Root(new Service(0.5f, UpdatePerception,
 				new Sequence(
 					new Action(() => Move((float) blackboard["move"])),
 					new Selector(
-						new BlackboardCondition("targetOffCentre",
-							Operator.IS_SMALLER_OR_EQUAL, 0.1f,
-							Stops.IMMEDIATE_RESTART,
-							new Sequence(NonStopTurning(-1f,1f))),
-						new BlackboardCondition("targetOnRight",
-							Operator.IS_EQUAL, true,
-							Stops.IMMEDIATE_RESTART,
-							// Turn right toward target
-							new Action(() => Turn(-1f))),
-						// Turn left toward target
-						new Action(() => Turn(1f))
+						new BlackboardCondition("targetOffCentre", Operator.IS_SMALLER_OR_EQUAL, 0.1f, Stops.IMMEDIATE_RESTART, new Sequence(RunAway(-1f, -1f))),
+						new BlackboardCondition("targetOnRight", Operator.IS_EQUAL, true, Stops.IMMEDIATE_RESTART, new Action(() => Turn(-1f))), new Action(() => Turn(1f)),
+						new BlackboardCondition("targetOnRight", Operator.IS_EQUAL, false, Stops.IMMEDIATE_RESTART, new Action(() => Move(-1f)))
 					)
-					)));
+				)));
+		}
 
+		// Unpredicatable shooting and movement ******************************************************************************************
+
+		private Root CrazyBehaviour () {
+			return new Root(new Service(0.5f, UpdatePerception,
+				new Sequence(
+					new Action(() => Move((float) blackboard["move"])),
+					new Selector(
+						new BlackboardCondition("targetInFront", Operator.IS_EQUAL, false, Stops.IMMEDIATE_RESTART, new Sequence(new Action(() => Turn(1f)), new Action(() => Turn(-1f)), new Action(() => Move(-1f)))),
+						new BlackboardCondition("targetInFront", Operator.IS_EQUAL, true, Stops.IMMEDIATE_RESTART, new Sequence(new Action(() => Turn(1f)), new Action(() => Turn(-1f)), RangedFire()))
+					)
+				)));
 		}
 
 
